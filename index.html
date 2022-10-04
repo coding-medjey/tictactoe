@@ -1,110 +1,155 @@
 <html>
-
-
-<head>
+  <head>
     <title>Tic Tac Toe</title>
     <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
 
-        .board {
-            display: flex;
-        }
+      .board {
+        display: flex;
+      }
 
-        .row {
-            align-content: center;
-            display: flex;
-        }
+      .row {
+        align-content: center;
+        display: flex;
+      }
 
-        .cell {
-            border: 1px solid black;
-            height: 200px;
-            width: 200px;
-            font-size: 100px;
-            text-align: center;
-        }
+      .cell {
+        border: 1px solid black;
+        height: 200px;
+        width: 200px;
+        font-size: 100px;
+        text-align: center;
+      }
 
-        .clicked {
-            border: 1px solid black;
-            height: 200px;
-            width: 200px;
-            font-size: 100px;
-            text-align: center;
-        }
+      .clicked {
+        border: 1px solid black;
+        height: 200px;
+        width: 200px;
+        font-size: 100px;
+        text-align: center;
+      }
 
-        .cell:hover {
-            background-color: lightgray;
-        }
+      .cell:hover {
+        background-color: lightgray;
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <div id="board"></div>
-</body>
-<script src="./script.js"> </script>
-<script>
+  </body>
+  <script src="./script.js"></script>
+  <script
+    src="https://cdn.socket.io/4.5.0/socket.io.min.js"
+    integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k"
+    crossorigin="anonymous"
+  ></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.1.0/uuidv4.min.js"></script>
+  <script>
+    const socket = io("ws://tic-tac-toe-message-delivery.herokuapp.com");
+    let uid = uuidv4();
+    let lastMovedSymbol;
 
-    let board = document.getElementById("board")
-    let Data = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    socket.on("move", ({ symbol, uuid, col, row }) => {
+      move(document.getElementById(`${row}-${col}`), row, col, symbol);
+    });
+    socket.on("player-2-joined", () => {
+      console.log("player joined");
+    });
+    socket.on("game-over", (winningMsg) => {
+      console.log(winningMsg);
+    });
+    let option = window.prompt("1.Start Game \n2.Join Game");
+    let board = document.getElementById("board");
+    let Data = [
+      [0, 0, 0],
+      [0, 0, 0],
+      [0, 0, 0],
+    ];
     function chooseWinner(Data, playersymbol) {
-        if (anyColFiledWith(Data, playersymbol) === true || crossCheckB(Data, playersymbol) === true || crossCheckA(Data, playersymbol) === true || anyRowFilledWith(Data, playersymbol) === true) {
-            let symbol = playersymbol
-            if (symbol === 1) {
-                symbol = "X"
-            } else {
-                symbol = "O"
-            }
-            setTimeout(() => {
-                if (window.confirm(`${symbol} Is Win Do You Want Restart ?`)) {
-                    window.location.reload()
-                } else {
-                    window.location.reload()
-                }
-            }, 500);
-        } else if (boardFilled(Data) === true) {
-            window.confirm("Draw")
+      if (
+        anyColFiledWith(Data, playersymbol) === true ||
+        crossCheckB(Data, playersymbol) === true ||
+        crossCheckA(Data, playersymbol) === true ||
+        anyRowFilledWith(Data, playersymbol) === true
+      ) {
+        let symbol = playersymbol;
+        if (symbol === 1) {
+          symbol = "X";
+        } else {
+          symbol = "O";
         }
-
+        socket.emit("game-over", window.alert(`${symbol} is win`));
+        setTimeout(() => {
+          if (window.confirm(`${symbol} Is Win Do You Want Restart ?`)) {
+            window.location.reload();
+          } else {
+            window.location.reload();
+          }
+        }, 500);
+      } else if (boardFilled(Data) === true) {
+        window.confirm("Draw");
+      }
     }
-    for (let i = 0; i < 3; i++) {
-        let row = document.createElement("div")
-        row.classList.add("row")
+    function playGame(playersymbol) {
+      for (let i = 0; i < 3; i++) {
+        let row = document.createElement("div");
+        row.classList.add("row");
         for (let j = 0; j < 3; j++) {
-            playersymbol = "X";
-            let cell = document.createElement("div")
-            cell.classList.add("cell")
-            const listner = function (e) {
-                if (Data[i][j] === 0) {
-                    if (playersymbol === "X") {
-                        Data[i][j] = 1
-                        cell.innerHTML = "X"
-                        playersymbol = "O"
-                        cell.classList.add("clicked")
-
-                    } else if (playersymbol === "O") {
-                        Data[i][j] = -1
-                        cell.innerHTML = "O"
-                        playersymbol = "X"
-                        cell.classList.add("clicked")
-                    }
-
-                    setTimeout(() => {
-                        chooseWinner(Data, Data[i][j])
-
-                    }, 500);
-                }
-
-            };
-            cell.addEventListener("click", listner)
-            row.append(cell)
+          //   playersymbol = "X";
+          let cell = document.createElement("div");
+          cell.classList.add("cell");
+          cell.id = `${i}-${j}`;
+          const listner = () => {
+            if (playersymbol === lastMovedSymbol) {
+              alert("wait till other user move");
+              return;
+            }
+            move(cell, i, j, playersymbol);
+          };
+          cell.addEventListener("click", listner);
+          row.append(cell);
         }
-        board.append(row)
+        board.append(row);
+      }
     }
-
-
-</script>
-
+    function move(cell, row, col, playersymbol) {
+      lastMovedSymbol = playersymbol;
+      if (Data[row][col] === 0) {
+        if (playersymbol === "X") {
+          Data[row][col] = 1;
+          cell.innerHTML = "X";
+          // playersymbol = "O";
+          cell.classList.add("clicked");
+        } else if (playersymbol === "O") {
+          Data[row][col] = -1;
+          cell.innerHTML = "O";
+          // playersymbol = "X";
+          cell.classList.add("clicked");
+        }
+        socket.emit("move", {
+          symbol: playersymbol,
+          uuid: uid,
+          col: col,
+          row: row,
+        });
+        setTimeout(() => {
+          chooseWinner(Data, Data[row][col]);
+        }, 500);
+      }
+    }
+    if (option === "1") {
+      window.alert(`${uid} - here is the id of your game`);
+      socket.emit("start-game", uid);
+      playGame("O");
+    } else if (option === "2") {
+      uid = window.prompt("Enter Your Uid");
+      socket.emit("join-game", uid);
+      playGame("X");
+    }
+  </script>
 </html>
