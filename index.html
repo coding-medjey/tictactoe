@@ -50,7 +50,9 @@
   ></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.1.0/uuidv4.min.js"></script>
   <script>
-    const socket = io("ws://tic-tac-toe-message-delivery.herokuapp.com");
+    const socket = io("wss://tic-tac-toe-message-delivery.herokuapp.com", {
+      secure: true,
+    });
     let uid = uuidv4();
     let lastMovedSymbol;
 
